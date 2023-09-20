@@ -9,7 +9,8 @@ namespace KafkaConcumer.Models
     {
         public async Task Handle(ConsumerMessage msg)
         {
-            Console.WriteLine(msg.Value);
+            var kmsg = msg as KafkaConsumerMessage;
+            Console.WriteLine($"received-{msg.Value}-{kmsg.KafkaResult.Partition.Value}-{kmsg.KafkaResult.Offset}");
         }
     }
 }

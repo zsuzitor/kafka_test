@@ -6,9 +6,9 @@ Console.WriteLine("Hello, World!");
 
 
 
-string server = "";
-string topic = "";
-string groupId = "";
+string server = "localhost:29092";
+string topic = "topic1test";
+string groupId = "group1";
 
 var ctSource = new CancellationTokenSource();
 var listener = new MQListener(
@@ -16,6 +16,7 @@ var listener = new MQListener(
     , new ConcreteMqHandler());
 try
 {
+    
     await listener.StartListeningAsync(ctSource.Token);
 }
 catch when (ctSource.Token.IsCancellationRequested)

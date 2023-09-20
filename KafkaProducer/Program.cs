@@ -5,8 +5,8 @@ using KafkaTestCore.Models.Implementation;
 Console.WriteLine("Start Produce");
 
 
-string server = "";//todo config
-string kafkaTopic = "test_topic_1";
+string server = "localhost:29092";//todo config
+string kafkaTopic = "topic1test";
 
 var kafkaSettings = new KafkaProducer.Settings() { Server = server };
 
@@ -16,7 +16,11 @@ var ctSource = new CancellationTokenSource();
 
 try
 {
-    await producer.Send( null, "msg1", ctSource.Token);
+    for (int i = 0; i < 10; i++)
+    {
+        await producer.Send(null, $"msg1_{i}", ctSource.Token);
+
+    }
 }
 catch when (ctSource.Token.IsCancellationRequested)
 {
