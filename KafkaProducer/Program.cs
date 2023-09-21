@@ -1,12 +1,21 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using KafkaTestCore.Models;
 using KafkaTestCore.Models.Implementation;
+using Microsoft.Extensions.Configuration;
 
 Console.WriteLine("Start Produce");
 
 
-string server = "localhost:29092";//todo config
-string kafkaTopic = "topic1test";
+
+IConfiguration Configuration = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    //.AddEnvironmentVariables()
+    //.AddCommandLine(args)
+    .Build();
+
+
+string server = Configuration["server"];//todo config
+string kafkaTopic = Configuration["topic"];
 
 var kafkaSettings = new KafkaProducer.Settings() { Server = server };
 
