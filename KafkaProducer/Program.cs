@@ -14,7 +14,7 @@ IConfiguration Configuration = new ConfigurationBuilder()
     .Build();
 
 
-string server = Configuration["server"];//todo config
+string server = Configuration["server"];
 string kafkaTopic = Configuration["topic"];
 
 var kafkaSettings = new KafkaProducer.Settings() { Server = server };
