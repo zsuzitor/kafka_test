@@ -28,6 +28,11 @@ var loggerFactory = LoggerFactory.Create(builder =>
 });
 
 
+
+
+
+
+
 var ctSource = new CancellationTokenSource();
 using var listener = new MQListener(
     new KafkaConsumer(new KafkaConsumer.Settings() { Server = server, Topic = kafkaTopic, GroupId = groupId })

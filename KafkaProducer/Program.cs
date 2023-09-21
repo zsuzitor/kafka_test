@@ -2,6 +2,8 @@
 using KafkaTestCore.Models;
 using KafkaTestCore.Models.Implementation;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 Console.WriteLine("Start Produce");
 
@@ -12,6 +14,21 @@ IConfiguration Configuration = new ConfigurationBuilder()
     //.AddEnvironmentVariables()
     //.AddCommandLine(args)
     .Build();
+
+var loggerFactory = LoggerFactory.Create(builder =>
+{
+    builder.AddFilter("Microsoft", LogLevel.Information)
+           .AddFilter("System", LogLevel.Information)
+           .AddFilter("SampleApp.Program", LogLevel.Information)//todo SampleApp.Program????
+           .AddConsole();
+});
+
+var serviceProvider = new ServiceCollection()
+            //.AddLogging()
+            .AddSingleton<ILoggerFactory>((_) => loggerFactory)
+            .AddSingleton<IConfiguration>((_) => Configuration)
+            .AddScoped<Reconnecter>()
+            .BuildServiceProvider();
 
 
 string server = Configuration["server"];
