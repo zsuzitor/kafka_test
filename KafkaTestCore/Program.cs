@@ -12,12 +12,6 @@ Console.WriteLine("Hello, World!");
 
 
 
-//todo logger
-//todo reconnector
-//todo service
-
-
-
 
 
 

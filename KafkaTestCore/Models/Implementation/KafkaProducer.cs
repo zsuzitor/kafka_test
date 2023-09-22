@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using Microsoft.Extensions.Logging;
 
 namespace KafkaTestCore.Models.Implementation
 {
@@ -15,8 +16,9 @@ namespace KafkaTestCore.Models.Implementation
         //https://github.com/confluentinc/confluent-kafka-dotnet/blob/master/examples/ExactlyOnce/Program.cs
 
         private IProducer<string, string> _producer;
+        private readonly ILogger _logger;
 
-        public KafkaProducer(Settings settings)
+        public KafkaProducer(Settings settings, ILoggerFactory logFactory)
         {
 
             var config = new ProducerConfig
@@ -26,6 +28,7 @@ namespace KafkaTestCore.Models.Implementation
             };
 
             _producer = new ProducerBuilder<string, string>(config).Build();
+            _logger = logFactory.CreateLogger("default");
         }
 
         public void Dispose()
@@ -43,9 +46,16 @@ namespace KafkaTestCore.Models.Implementation
 
         public async Task Send(string topic, string? key, string message, CancellationToken ct)
         {
-            var msg = new Message<string, string> { Value = message, Key = key };
-            _ = await _producer.ProduceAsync(topic, msg, ct);
+            try
+            {
+                var msg = new Message<string, string> { Value = message, Key = key };
+                _ = await _producer.ProduceAsync(topic, msg, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ex.Message);
+                throw;
+            }
         }
     }
-
 }

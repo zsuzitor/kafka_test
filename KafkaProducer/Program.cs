@@ -29,15 +29,19 @@ var serviceProvider = new ServiceCollection()
             .AddSingleton<IConfiguration>((_) => Configuration)
             .AddScoped<Reconnecter>()
             .BuildServiceProvider();
+ServiceLocator.Init(serviceProvider);
 
 
-string server = Configuration["server"];
-string kafkaTopic = Configuration["topic"];
+
+
+
+string server = Configuration["Server"];
+string kafkaTopic = Configuration["Topic"];
 
 var kafkaSettings = new KafkaProducer.Settings() { Server = server };
 
 
-using IBaseProducer producer = new KafkaToBaseProducer(new KafkaProducer(kafkaSettings), kafkaTopic);
+using IBaseProducer producer = new KafkaToBaseProducer(new KafkaProducer(kafkaSettings, loggerFactory), kafkaTopic);
 var ctSource = new CancellationTokenSource();
 
 try
@@ -54,7 +58,8 @@ catch when (ctSource.Token.IsCancellationRequested)
 }
 catch (Exception e)
 {
-    //todo log
+    Console.WriteLine("завершено с ошибкой");
+    Console.WriteLine(e.Message);
 }
 
 Console.WriteLine("End Produce");

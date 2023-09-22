@@ -134,7 +134,7 @@ namespace KafkaTestCore.Models
 
                 //var prev = _ctx.PreviousStep;
 
-                await Task.Delay(_ctx.TimeToReconnect);
+                await Task.Delay(_ctx.TimeToReconnect * 1000);
                 _ctx.PreviousStep = ReconnectStepEnum.Wait;
                 return new ReconnectStep(_ctx);
             }

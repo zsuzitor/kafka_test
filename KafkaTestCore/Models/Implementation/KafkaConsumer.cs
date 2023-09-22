@@ -1,14 +1,14 @@
 ﻿using Confluent.Kafka;
 using KafkaTestCore.Models.Entity;
+using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
+using static KafkaTestCore.Models.ActionStep;
 
 namespace KafkaTestCore.Models.Implementation
 {
 
     public class KafkaConsumer : IMQConsumer
     {
-        private IConsumer<string, string> _kafkaConsumer;
-        private readonly Settings _settings;
-
         public class Settings
         {
             public string Server { get; set; }
@@ -16,9 +16,14 @@ namespace KafkaTestCore.Models.Implementation
             public string GroupId { get; set; }
         }
 
-        public KafkaConsumer(Settings settings)
+        private IConsumer<string, string> _kafkaConsumer;
+        private readonly Settings _settings;
+        private readonly ILogger _logger;
+
+        public KafkaConsumer(Settings settings, ILoggerFactory logFactory)
         {
             _settings = settings;
+            _logger = logFactory.CreateLogger("default");
         }
 
         public ConsumerMessage Receive(TimeSpan timeout)
@@ -31,11 +36,13 @@ namespace KafkaTestCore.Models.Implementation
                     return null;
                 }
 
+                _logger.LogInformation($"{nameof(KafkaConsumer)}-concumed-topic:{_settings.Topic}-offset:{cr.Offset}-partition:{cr.Partition}");
                 return new KafkaConsumerMessage() { Key = cr.Key, Value = cr.Message.Value, KafkaResult = cr };
             }
             catch (Exception ex)
             {
-                throw;//todo тут исключение расконнекта
+                _logger.LogError(ex, ex.Message);
+                throw new ErrorWithConnectException();
             }
 
         }
@@ -49,7 +56,8 @@ namespace KafkaTestCore.Models.Implementation
             }
             catch (Exception ex)
             {
-                throw;//todo тут исключение расконнекта
+                _logger.LogError(ex, ex.Message);
+                throw new ErrorWithConnectException();
             }
 
         }
@@ -64,6 +72,7 @@ namespace KafkaTestCore.Models.Implementation
             {
                 if (_kafkaConsumer == null)
                 {
+                    _logger.LogInformation($"{nameof(KafkaConsumer)}-try to connect-topic:{_settings.Topic}");
                     var cConfig = new ConsumerConfig
                     {
                         BootstrapServers = _settings.Server,
@@ -74,45 +83,20 @@ namespace KafkaTestCore.Models.Implementation
                     string topic = _settings.Topic;
                     _kafkaConsumer = new ConsumerBuilder<string, string>(cConfig).Build();
                     _kafkaConsumer.Subscribe(topic);
+                    _logger.LogInformation($"{nameof(KafkaConsumer)}-connected-topic:{_settings.Topic}");
                 }
 
             }
             catch (Exception ex)
             {
-                throw;//todo тут исключение расконнекта
+                _logger.LogError(ex, ex.Message);
+                throw new ErrorWithConnectException();
             }
 
 
         }
 
-        //public async Task StartListening(Settings settings, CancellationToken ct)
-        //{
-        //    var cConfig = new ConsumerConfig
-        //    {
-        //        BootstrapServers = settings.Server,
-        //        GroupId = settings.GroupId,
-        //        EnableAutoCommit = false
-        //    };
-        //    string topic = settings.Topic;
-
-        //    using (var consumer = new ConsumerBuilder<string, int>(cConfig).Build())
-        //    {
-        //        //consumer.Assign - можно выбрать топик и офсет
-        //        consumer.Subscribe(topic);
-        //        while (true)
-        //        {
-        //            ct.ThrowIfCancellationRequested();
-        //            var cr = consumer.Consume(ct);
-        //            //todo handle
-        //            consumer.Commit(cr);
-
-        //            //cr.Message.Key, cr.Message.Value
-        //        }
-
-
-        //    }
-
-        //}
+        
 
         public void Disconnect()
         {

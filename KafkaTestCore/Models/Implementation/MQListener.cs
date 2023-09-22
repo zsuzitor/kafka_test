@@ -6,56 +6,65 @@ namespace KafkaTestCore.Models.Implementation
 {
     public class MQListener : IMQListener
     {
+        public class Settings
+        {
+            public int ReceiveTimeout { get; set; }
+            public int ReconnecterTimeout { get; set; }
+        }
+
         private readonly IMQConsumer _consumer;
         private readonly IMQHandler _handler;
         private readonly Reconnecter _reconnecter;
         private readonly ILogger _logger;
+        private readonly Settings _settings;
 
-        public MQListener(IMQConsumer consumer, IMQHandler handler, Reconnecter reconnecter, ILoggerFactory logFactory)
+        public MQListener(IMQConsumer consumer, IMQHandler handler, Reconnecter reconnecter, ILoggerFactory logFactory, Settings settings)
         {
             _consumer = consumer;
             _handler = handler;
             _reconnecter = reconnecter;
             _logger = logFactory.CreateLogger("default");
+            _settings = settings;
         }
         public void Dispose()
         {
             _consumer.Dispose();
         }
 
+
         public async Task StartListeningAsync(CancellationToken ct)
         {
-            await Task.Run(async () =>
+            try
             {
-                await StartListening(ct);
-            }, ct);
-        }
-
-        private async Task StartListening(CancellationToken ct)
-        {
-            _consumer.Connect();
-            await _reconnecter.WorkAsync(async () =>
-            {
-                while (true)
+                await _reconnecter.WorkAsync(async () =>
                 {
-                    ct.ThrowIfCancellationRequested();
-
-                    var msg = _consumer.Receive(TimeSpan.FromSeconds(2));//todo конфиг
-                    if (msg == null)
+                    _consumer.Connect();
+                    while (true)
                     {
-                        continue;
-                    }
+                        ct.ThrowIfCancellationRequested();
 
-                    var successHandled = await _handler.Handle(msg);
-                    if (!successHandled)
-                    {
-                        _logger.LogWarning($"stoped listening {nameof(MQListener)}");
-                        break;
+                        var msg = _consumer.Receive(TimeSpan.FromSeconds(_settings.ReceiveTimeout));//todo конфиг
+                        if (msg == null)
+                        {
+                            continue;
+                        }
+
+                        var successHandled = await _handler.Handle(msg);
+                        if (!successHandled)
+                        {
+                            _logger.LogWarning($"stoped listening {nameof(MQListener)}");
+                            break;
+                        }
+                        _consumer.MessageWasHandled(msg);
                     }
-                    _consumer.MessageWasHandled(msg);
-                }
-            }, () => _consumer.Reconnect(), ct, 200);//todo time to config
-            
+                }, () => _consumer.Reconnect(), ct, _settings.ReconnecterTimeout);//todo time to config
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ex.Message);
+                throw;
+            }
 
         }
     }
